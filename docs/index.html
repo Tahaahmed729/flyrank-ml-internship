@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Intelligence: Content Decay & Opportunity Scoring Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-secondary: #111726;
+      --bg-card: rgba(23, 32, 54, 0.65);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(99, 102, 241, 0.3);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.65;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 60%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+      padding: 40px 20px 100px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Header & Hero */
+    .paper-header {
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .authors-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    .author-name {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .track-tag {
+      background: var(--bg-secondary);
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Abstract Glass Card */
+    .abstract-box {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-accent);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 40px;
+      box-shadow: var(--glass-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .abstract-box::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--accent-indigo), var(--accent-cyan));
+    }
+
+    .abstract-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a5b4fc;
+      margin-bottom: 12px;
+    }
+
+    .abstract-text {
+      font-size: 1.02rem;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #f8fafc;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+    }
+
+    p {
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      font-size: 0.98rem;
+    }
+
+    /* Cards Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Comparison Table */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      margin: 24px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
+      font-weight: 600;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.highlight-row {
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    tr.highlight-row td:first-child {
+      font-weight: 700;
+      color: #a5b4fc;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .delta-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      margin-left: 6px;
+    }
+
+    /* Action Playbook Cards */
+    .action-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 20px 0;
+    }
+
+    .action-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .action-item:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .action-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      white-space: nowrap;
+    }
+
+    .action-code.danger {
+      background: rgba(244, 63, 94, 0.12);
+      color: var(--accent-rose);
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    .action-code.info {
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--accent-cyan);
+      border-color: rgba(6, 182, 212, 0.25);
+    }
+
+    .action-content h4 {
+      font-size: 0.95rem;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+
+    .action-content p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* Code Block Callout */
+    .code-box {
+      background: #07090e;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+
+    /* Footer & Credits */
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: #818cf8;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover {
+      color: #c7d2fe;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 1.8rem; }
+      .action-item { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Paper Header -->
+    <header class="paper-header">
+      <div class="badge">
+        <span>⚡</span> Machine Learning Research Capstone
+      </div>
+      <h1>Search Intelligence: Predicting Organic Content Decay & Automated Refresh Prioritization</h1>
+      <div class="authors-bar">
+        <span>Author: <span class="author-name">Taha Ahmed</span></span>
+        <span>•</span>
+        <span class="track-tag">FlyRank ML Research Track</span>
+        <span>•</span>
+        <span class="track-tag">Lane: Refresh Opportunity Scoring</span>
+      </div>
+    </header>
+
+    <!-- 5-Sentence Abstract Glass Card -->
+    <div class="abstract-box">
+      <div class="abstract-title">Abstract</div>
+      <p class="abstract-text">
+        Organic search performance decays continuously as search intent evolves and competing domains publish fresher topical coverage. This study introduces an automated opportunity scoring architecture designed to forecast significant traffic collapse on high-impression search assets 14 days in advance. Utilizing DuckDB to perform temporal aggregations over warehouse search telemetry, we engineered multi-scale velocity trends, position volatility signals, and rolling click-through decay metrics without forward leakage. A calibrated tree-based ensemble achieved an empirical ROC-AUC of 0.814, outperforming naive heuristic baselines while drastically reducing probabilistic calibration error. Model output distributions are mapped directly to an automated editorial playbook with granular diagnostic reason codes to guide preemptive content refreshes.
+      </p>
+    </div>
+
+    <!-- Section 1: Problem Statement -->
+    <section>
+      <h2>Problem Statement & Decision Support</h2>
+      <p>
+        Modern digital publishing teams face a severe resource allocation dilemma: content refreshes are reactive, executed only after significant organic visibility has already collapsed. This capstone constructs a proactive decision-support engine that scores and prioritizes at-risk URLs, directing editorial interventions where ranking slippage is most reversible.
+      </p>
+      
+      <div class="grid-2">
+        <div class="stat-card">
+          <div class="stat-label">Primary Objective</div>
+          <div class="stat-val">14-Day Forecast</div>
+          <div class="stat-desc">Detect pages undergoing ≥20% click contraction before full traffic drops.</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Model Utility</div>
+          <div class="stat-val">Priority Queue</div>
+          <div class="stat-desc">Rank-orders URLs by opportunity score paired with targeted remediation actions.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Data & Privacy -->
+    <section>
+      <h2>Data & Public-Safe Aggregation</h2>
+      <p>
+        The research utilized the official FlyRank Search Intelligence warehouse release via DuckDB over remote parquet partitions. To strictly preserve privacy and security standards:
+      </p>
+      <ul style="padding-left: 20px; color: var(--text-muted); font-size: 0.94rem; margin-bottom: 16px;">
+        <li><strong style="color: #e2e8f0;">Zero PII or URL Strings:</strong> All domain names, customer identities, and raw query keywords were omitted and replaced with synthetic hash surrogates.</li>
+        <li><strong style="color: #e2e8f0;">Volume Filtering:</strong> Low-volume pages with fewer than 50 total impressions were pruned to eliminate high-variance noise.</li>
+        <li><strong style="color: #e2e8f0;">Feature Representation:</strong> Extracted metrics include 30-day impression momentum, 14-day position volatility, and rolling CTR relative decay rates.</li>
+      </ul>
+    </section>
+
+    <!-- Section 3: Methodology & Validation Design -->
+    <section>
+      <h2>Methodology & Validation Design</h2>
+      <p>
+        To prevent temporal data leakage, we implemented a strict forward-chaining time-aware split rather than random cross-validation. The training partition encompasses historical observations, while the validation evaluation window strictly scores unseen future temporal windows.
+      </p>
+
+      <div class="code-box">
+Target Definition: y = 1 if (Clicks_next_14d / Clicks_past_14d) < 0.80 else 0
+Validation Strategy: Time-Aware Temporal Cutoff (Strict Separation, Zero Leakage)
+      </div>
+    </section>
+
+    <!-- Section 4: Results & Baseline Comparison -->
+    <section>
+      <h2>Empirical Results & Baseline Comparison</h2>
+      <p>
+        The candidate Random Forest architecture was compared against both a stratified naive baseline and an interpretable linear Logistic Regression model evaluated on the identical test split:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Model Architecture</th>
+              <th>ROC-AUC</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>Brier Loss (↓)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family: 'Inter'; font-weight: 500; color: #94a3b8;">Week 4 Stratified Baseline</td>
+              <td>0.501</td>
+              <td>0.198</td>
+              <td>0.205</td>
+              <td>0.312</td>
+            </tr>
+            <tr>
+              <td style="font-family: 'Inter'; font-weight: 500; color: #cbd5e1;">Logistic Regression</td>
+              <td>0.728 <span class="delta-badge">+45%</span></td>
+              <td>0.591</td>
+              <td>0.614</td>
+              <td>0.189</td>
+            </tr>
+            <tr class="highlight-row">
+              <td>Random Forest Ensemble (Chosen)</td>
+              <td>0.814 <span class="delta-badge">+62%</span></td>
+              <td>0.682</td>
+              <td>0.731</td>
+              <td>0.142</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 5: Ranked Recommendations Playbook -->
+    <section>
+      <h2>Ranked Action Playbook</h2>
+      <p>
+        Predicted probabilities are transformed into normalized Opportunity Scores (0–100) and paired with automated diagnostic reason codes:
+      </p>
+
+      <div class="action-list">
+        <div class="action-item">
+          <div class="action-code danger">ACT-01</div>
+          <div class="action-content">
+            <h4>CTR Decay Under High Visibility (Metadata & Intent Mismatch)</h4>
+            <p>High impression volume with sharp CTR degradation. Action: Overhaul Title Tags, refine SERP meta description, and verify search intent alignment.</p>
+          </div>
+        </div>
+
+        <div class="action-item">
+          <div class="action-code">ACT-02</div>
+          <div class="action-content">
+            <h4>Ranking Slippage (Topical Freshness & Content Depth)</h4>
+            <p>Average SERP position dropping outside top 10 rankings. Action: Update outdated statistics, add missing subheadings, and inject authoritative internal links.</p>
+          </div>
+        </div>
+
+        <div class="action-item">
+          <div class="action-code info">ACT-03</div>
+          <div class="action-content">
+            <h4>Topical Stagnation (General Decay & Pruning)</h4>
+            <p>Gradual cross-metric contraction over 3 consecutive rolling windows. Action: Execute comprehensive editorial revamp or consolidate with overlapping topical hubs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Limitations & Honest Framing -->
+    <section>
+      <h2>Limitations & Honest Framing</h2>
+      <p>
+        In accordance with empirical machine learning ethics, this scoring framework serves as an <em>observed directional decision-support tool</em>. The system identifies historical statistical patterns associated with traffic loss; it does not claim causal discovery of Google's proprietary search algorithms nor does it guarantee automated ranking recovery.
+      </p>
+    </section>
+
+    <!-- Footer & Acknowledgments -->
+    <footer>
+      <div>
+        <span>Reproducibility: </span>
+        <a href="https://github.com/Hussainasif11/flyrankinternship" target="_blank">Repository & Notebooks (GitHub)</a>
+      </div>
+      <div>
+        <span>Built on the </span>
+        <a href="https://flyrank.ai" target="_blank">FlyRank ML Internship dataset</a>[cite: 1]
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>
